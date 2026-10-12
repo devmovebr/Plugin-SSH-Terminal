@@ -44,6 +44,7 @@ import {
 } from "../look/terminal-font-zoom";
 import { TmuxSessionPicker } from "./TmuxSessionPicker";
 import { getTerminalBufferText } from "./terminal-buffer-text.ts";
+import { forwardAppShortcut, isAppChord } from "../lib/app-shortcut-forwarding";
 import { getMacLineNavigationSequence } from "../lib/mac-line-navigation";
 import { useCommandTracker } from "./command-history/useCommandTracker";
 import {
@@ -2641,7 +2642,7 @@ const TerminalInner = forwardRef<TerminalHandle, SSHTerminalProps>(
         allowTransparency: true, // MUST be set before open()
         convertEol: false,
         macOptionIsMeta: config.macOptionIsMeta,
-        macOptionClickForcesSelection: false,
+        macOptionClickForcesSelection: true,
         rightClickSelectsWord: config.rightClickSelectsWord,
         fastScrollSensitivity: config.fastScrollSensitivity,
         allowProposedApi: true,
@@ -3077,14 +3078,7 @@ const TerminalInner = forwardRef<TerminalHandle, SSHTerminalProps>(
           }
         }
 
-        if (
-          hasDock &&
-          e.ctrlKey &&
-          e.shiftKey &&
-          !e.altKey &&
-          !e.metaKey &&
-          e.key.toLowerCase() === "a"
-        ) {
+        if (hasDock && isAppChord(e) && e.key.toLowerCase() === "a") {
           e.preventDefault();
           e.stopPropagation();
           toggleDock();
@@ -3102,36 +3096,8 @@ const TerminalInner = forwardRef<TerminalHandle, SSHTerminalProps>(
           return false;
         }
 
-        // Forward global app shortcuts to AppShell directly, xterm swallows
-        // all keydown events and synthetic re-dispatch is unreliable.
-        // stopPropagation prevents the same event from also firing the window listener.
-        if (e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey) {
-          const globalCodes = [
-            "BracketRight",
-            "BracketLeft",
-            "Backslash",
-            "Minus",
-            "Enter",
-          ];
-          if (globalCodes.includes(e.code)) {
-            e.stopPropagation();
-            globalShortcutHandler.current?.(e);
-            return false;
-          }
-        }
-
-        if (e.altKey && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
-          const arrowCodes = [
-            "ArrowLeft",
-            "ArrowRight",
-            "ArrowUp",
-            "ArrowDown",
-          ];
-          if (arrowCodes.includes(e.code)) {
-            e.stopPropagation();
-            globalShortcutHandler.current?.(e);
-            return false;
-          }
+        if (forwardAppShortcut(e, globalShortcutHandler.current) === false) {
+          return false;
         }
 
         if (isTabJumpHotkey(e)) {
