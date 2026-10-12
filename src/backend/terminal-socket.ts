@@ -30,6 +30,7 @@ import {
   resolveServerHostId,
   resolveServerJumpHosts,
   sftpPathToLocalPath,
+  SHELL_ENV,
   toTerminalDimension,
   type TerminalLogger,
 } from "./helpers.js";
@@ -2031,6 +2032,7 @@ export function createTerminalSocket(deps: TerminalSocketDeps) {
               cols: data.cols,
               term: "xterm-256color",
             } as PseudoTtyOptions,
+            { env: { ...SHELL_ENV } },
             bind((err: Error | undefined, stream: ClientChannel) => {
               shellCallbackReceived = true;
               clearTimeout(shellTimeout);

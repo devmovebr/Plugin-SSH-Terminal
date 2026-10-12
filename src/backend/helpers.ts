@@ -12,6 +12,18 @@ import type { PluginLogger } from "@termix-ssh/plugin-sdk/backend";
 
 const { AgentProtocol, BaseAgent } = ssh2Pkg;
 
+/**
+ * Environment requested for every interactive shell, the way OpenSSH's
+ * SendEnv does. xterm.js only speaks UTF-8, and a session that falls back to
+ * the POSIX locale drops anything typed outside ASCII (readline eats "ç",
+ * tmux prints "_"). Debian and Ubuntu sshd accept LC_* and COLORTERM by
+ * default; a server that does not simply ignores them.
+ */
+export const SHELL_ENV: Readonly<Record<string, string>> = {
+  LC_CTYPE: "C.UTF-8",
+  COLORTERM: "truecolor",
+};
+
 export function getErrorMessage(
   error: unknown,
   fallback = "Unknown error",
